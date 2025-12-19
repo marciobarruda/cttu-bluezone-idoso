@@ -9,8 +9,8 @@
     <style>
       :root{
         --brand:#0d6efd; --brand-dark:#0b5ed7; --bg:#f9fbff; --text:#0b2447; --muted:#6c757d;
-        --stage-w:1379px;
-        --pattern-w:1366px;
+        --stage-w:1480px;
+        --pattern-w:1470px;
       }
       body{
         background:
@@ -36,7 +36,7 @@
       .form-control[readonly]{ background:#f8f9fa; }
       .review-table td{ vertical-align: top; }
       .frame-card{
-        max-width: 920px;
+        max-width: 1160px;
         background:#ffffff;
         border-radius:1rem;
         box-shadow:0 18px 40px rgba(13,110,253,.12), 0 8px 22px rgba(13,110,253,.08);
@@ -68,16 +68,16 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label required" for="cpf">CPF</label>
-              <input type="text" inputmode="numeric" pattern="\d{11}" maxlength="14" class="form-control" id="cpf" value="{{ $json.preferred_username }}" placeholder="Somente números" required>
+              <input type="text" inputmode="numeric" pattern="\d{11}" maxlength="14" class="form-control" id="cpf" placeholder="Somente números" required>
               <div class="invalid-feedback" id="cpfFeedback">CPF inválido.</div>
             </div>
             <div class="col-md-5">
               <label class="form-label required" for="nome">Nome completo</label>
-              <input type="text" class="form-control" id="nome" value="{{ String($json.name ?? '').trim() || String($json.socialName ?? '').trim().toUpperCase() }}" required>
+              <input type="text" class="form-control" id="nome" required>
             </div>
             <div class="col-md-2">
               <label class="form-label required" for="nascimento">Data de nascimento</label>
-              <input type="date" class="form-control" id="nascimento" value="{{ $json.dob.split('/').reverse().join('-') }}" required>
+              <input type="date" class="form-control" id="nascimento" required>
             </div>
             <div class="col-md-1">
               <label class="form-label" for="idade">Idade</label>
@@ -96,39 +96,39 @@
           <div class="row g-3">
             <div class="col-md-3">
               <label class="form-label required" for="cep">CEP</label>
-              <input type="text" class="form-control" id="cep" placeholder="00000-000" value="{{ $json.postal_code }}" required>
+              <input type="text" class="form-control" id="cep" placeholder="00000-000" required>
             </div>
             <div class="col-md-6">
               <label class="form-label required" for="logradouro">Logradouro</label>
-              <input type="text" class="form-control" id="logradouro" value="{{ $json.addressStreet }}" required>
+              <input type="text" class="form-control" id="logradouro" required>
             </div>
             <div class="col-md-3">
               <label class="form-label required" for="numero">Número</label>
-              <input type="text" class="form-control" id="numero" value="{{ $json.addressNumber }}" required>
+              <input type="text" class="form-control" id="numero" required>
             </div>
             <div class="col-md-4">
               <label class="form-label" for="complemento">Complemento</label>
-              <input type="text" class="form-control" id="complemento" value="{{ $json.addressComplement }}">
+              <input type="text" class="form-control" id="complemento">
             </div>
             <div class="col-md-4">
               <label class="form-label required" for="bairro">Bairro</label>
-              <input type="text" class="form-control" id="bairro" value="{{ $json.neighborhood }}" required>
+              <input type="text" class="form-control" id="bairro" required>
             </div>
             <div class="col-md-3">
               <label class="form-label required" for="cidade">Cidade</label>
-              <input type="text" class="form-control" id="cidade" value="{{ $json.locality }}" required>
+              <input type="text" class="form-control" id="cidade" required>
             </div>
             <div class="col-md-1">
               <label class="form-label required" for="uf">UF</label>
-              <input type="text" class="form-control" id="uf" maxlength="2" value="PE" required>
+              <input type="text" class="form-control" id="uf" maxlength="2" required>
             </div>
             <div class="col-md-4">
               <label class="form-label required" for="email">E-mail</label>
-              <input type="text" class="form-control" id="email" value="{{ $json.email }}" required>
+              <input type="text" class="form-control" id="email" required>
             </div>
             <div class="col-md-4">
               <label class="form-label required" for="whatsapp">WhatsApp</label>
-              <input type="text" class="form-control" id="whatsapp" inputmode="numeric" pattern="[0-9]{10,11}" placeholder="DDD + número (apenas dígitos)" value="{{ $json.telefone }}" required>
+              <input type="text" class="form-control" id="whatsapp" inputmode="numeric" pattern="[0-9]{10,11}" placeholder="DDD + número (apenas dígitos)" required>
             </div>
           </div>
         </div>

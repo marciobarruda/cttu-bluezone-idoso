@@ -342,6 +342,23 @@
 
     <div class="pattern-strip pattern-bottom"></div>
 
+    <div class="modal fade" id="ageModal" tabindex="-1" aria-labelledby="ageModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="ageModalLabel">Idade não elegível</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            Este serviço é destinado a pessoas com <strong>60 anos ou mais</strong>. Verifique a data de nascimento informada.
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ok, entendi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       const FINAL_ENDPOINT = "https://webhook-n8n-dev-conectarecife.recife.pe.gov.br/webhook/enviar-dados-cttu";
 
@@ -379,24 +396,48 @@
       let cnpjRequired = false;
       let companyDocOk = false;
 
+      // Idade mínima (gate)
+      let ageAllowed = false;
+      let lastAgeGateState = null;
+
       // Locks --------------------------------------------------------------
       function refreshLocks(){
+        const blockedByAge = !ageAllowed;
+        const docInput = $('#fileDocumento');
         const crlvInput = $('#fileCRLV');
         const compInput = $('#fileComprovante');
+        const contratoInput = $('#fileContratoSocial');
 
-        crlvInput.disabled = crlvOk ? true : !docOk;
-        compInput.disabled = compOk ? true : !(docOk && crlvOk && (!cnpjRequired || companyDocOk));
+        if(docInput){
+          docInput.disabled = blockedByAge ? true : !!docOk;
+          docInput.title = blockedByAge
+            ? 'Disponível após validar idade (≥ 60 anos)'
+            : (docOk ? 'Documento já validado' : '');
+        }
 
-        crlvInput.title = crlvInput.disabled
-          ? (crlvOk ? 'CRLV já validado' : 'Disponível após validar o documento')
-          : '';
+        if(crlvInput){
+          crlvInput.disabled = blockedByAge ? true : (crlvOk ? true : !docOk);
+          crlvInput.title = blockedByAge
+            ? 'Disponível após validar idade (≥ 60 anos)'
+            : (crlvOk ? 'CRLV já validado' : (!docOk ? 'Disponível após validar o documento' : ''));
+        }
 
-        compInput.title = compInput.disabled
-          ? (compOk ? 'Comprovante já validado'
-                    : (!docOk ? 'Disponível após validar o documento'
-                              : (!crlvOk ? 'Disponível após validar o CRLV'
-                                         : (cnpjRequired && !companyDocOk ? 'Disponível após anexar o Contrato Social' : ''))))
-          : '';
+        if(compInput){
+          compInput.disabled = blockedByAge ? true : (compOk ? true : !(docOk && crlvOk && (!cnpjRequired || companyDocOk)));
+          compInput.title = blockedByAge
+            ? 'Disponível após validar idade (≥ 60 anos)'
+            : (compOk ? 'Comprovante já validado'
+                      : (!docOk ? 'Disponível após validar o documento'
+                                : (!crlvOk ? 'Disponível após validar o CRLV'
+                                           : (cnpjRequired && !companyDocOk ? 'Disponível após anexar o Contrato Social' : ''))));
+        }
+
+        if(contratoInput){
+          contratoInput.disabled = blockedByAge ? true : (cnpjRequired ? contratoInput.disabled : false);
+          contratoInput.title = blockedByAge
+            ? 'Disponível após validar idade (≥ 60 anos)'
+            : (cnpjRequired && contratoInput.disabled ? 'Contrato Social já anexado' : '');
+        }
       }
 
       // Botão Enviar -------------------------------------------------------
@@ -434,6 +475,10 @@
         return valid;
       }
       function requireBaseFields(){
+        if(!ageAllowed){
+          alert('Serviço destinado a pessoas com 60 anos ou mais.');
+          return false;
+        }
         const cpfValid = setCPFValidity();
         const nome=$('#nome').value.trim(), nasc=$('#nascimento').value;
         if(!cpfValid){ $('#cpf').focus(); return false; }
@@ -770,9 +815,45 @@
       $('#fileComprovante').addEventListener('change', ()=>{ if($('#fileComprovante').files.length) sendComp(); });
 
       // Espelho (revisão) --------------------------------------------------
+      function applyAgeGate(allow){
+        ageAllowed = allow;
+        const block = !allow;
+        ['#cpf','#nome','#cep','#logradouro','#numero','#complemento','#bairro','#cidade','#uf','#email','#whatsapp',
+         '#kinshipSelect','#kinshipJust',
+         '#btnClearDocumento','#btnClearCRLV','#btnClearComp','#btnClearContratoSocial'
+        ].forEach(sel=>{
+          const el=$(sel); if(!el) return;
+          if(block){
+            el.dataset.ageLocked = '1';
+            el.disabled = true;
+          }else if(el.dataset.ageLocked === '1'){
+            el.disabled = false;
+            delete el.dataset.ageLocked;
+          }
+        });
+        $('#btnSubmitAll').disabled = true;
+        refreshLocks();
+        refreshSubmitState();
+      }
+
+      function handleAgeGate(age){
+        const allow = Number.isInteger(age) && age >= 60;
+        if(lastAgeGateState === allow && ageAllowed === allow) return;
+        applyAgeGate(allow);
+        if(!allow && Number.isInteger(age)){
+          const modalEl = document.getElementById('ageModal');
+          if(modalEl && window.bootstrap){
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+          }
+        }
+        lastAgeGateState = allow;
+      }
+
       function updateAgeDisplay(){
         const age = calcAge($('#nascimento').value);
         $('#idade').value = Number.isInteger(age) ? String(age) : '';
+        handleAgeGate(age);
       }
 
       function updateReview(){
@@ -969,6 +1050,7 @@
       }
 
       refreshLocks();
+      applyAgeGate(false);
       updateReview();
       selfTests();
     </script>

@@ -68,15 +68,20 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label required" for="cpf">CPF</label>
-              <input type="text" inputmode="numeric" pattern="\d{11}" maxlength="14" class="form-control" id="cpf" value="{{ $json.preferred_username }}" placeholder="Somente números" readonly required>
+              <input type="text" inputmode="numeric" pattern="\d{11}" maxlength="14" class="form-control" id="cpf" value="{{ $json.preferred_username }}" placeholder="Somente números" required>
+              <div class="invalid-feedback" id="cpfFeedback">CPF inválido.</div>
             </div>
             <div class="col-md-5">
               <label class="form-label required" for="nome">Nome completo</label>
-              <input type="text" class="form-control" id="nome" value="{{ String($json.name ?? '').trim() || String($json.socialName ?? '').trim().toUpperCase() }}" readonly required>
+              <input type="text" class="form-control" id="nome" value="{{ String($json.name ?? '').trim() || String($json.socialName ?? '').trim().toUpperCase() }}" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label required" for="nascimento">Data de nascimento</label>
-              <input type="date" class="form-control" id="nascimento" value="{{ $json.dob.split('/').reverse().join('-') }}" readonly required>
+              <input type="date" class="form-control" id="nascimento" value="{{ $json.dob.split('/').reverse().join('-') }}" required>
+            </div>
+            <div class="col-md-1">
+              <label class="form-label" for="idade">Idade</label>
+              <input type="text" class="form-control" id="idade" value="" readonly>
             </div>
           </div>
         </div>
@@ -351,6 +356,16 @@
       const normalize = (s) => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
       const isPositiveValidation = (txt) => { const n=normalize(txt); return n && !n.includes('nao'); };
       const yyyyMmDd = (date = new Date()) => date.toISOString().slice(0,10); // YYYY-MM-DD
+      const calcAge = (dateStr) => {
+        if(!dateStr) return null;
+        const birth = new Date(dateStr);
+        if(Number.isNaN(birth.getTime())) return null;
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if(m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        return age >= 0 ? age : null;
+      };
 
       // Estado ------------------------------------------------------------
       let docOk=false, docReturn=null, docTried=false;
@@ -405,9 +420,23 @@
         rest=(soma*10)%11; if(rest===10||rest===11) rest=0; if(rest!==parseInt(cpf.substring(10,11))) return false;
         return true;
       }
+      function setCPFValidity(){
+        const cpfInput = $('#cpf');
+        const feedback = $('#cpfFeedback');
+        const cpf = cpfInput.value.trim();
+        const hasValue = cpf.length > 0;
+        const valid = isValidCPF(cpf);
+        cpfInput.classList.toggle('is-invalid', hasValue && !valid);
+        cpfInput.classList.toggle('is-valid', hasValue && valid);
+        if(feedback){
+          feedback.textContent = hasValue && !valid ? 'CPF inválido.' : '';
+        }
+        return valid;
+      }
       function requireBaseFields(){
-        const cpf=$('#cpf').value.trim(), nome=$('#nome').value.trim(), nasc=$('#nascimento').value;
-        if(!isValidCPF(cpf)){ alert('CPF inválido.'); return false; }
+        const cpfValid = setCPFValidity();
+        const nome=$('#nome').value.trim(), nasc=$('#nascimento').value;
+        if(!cpfValid){ $('#cpf').focus(); return false; }
         if(!nome){ alert('Informe o nome completo.'); return false; }
         if(!nasc){ alert('Informe a data de nascimento.'); return false; }
         return true;
@@ -741,10 +770,17 @@
       $('#fileComprovante').addEventListener('change', ()=>{ if($('#fileComprovante').files.length) sendComp(); });
 
       // Espelho (revisão) --------------------------------------------------
+      function updateAgeDisplay(){
+        const age = calcAge($('#nascimento').value);
+        $('#idade').value = Number.isInteger(age) ? String(age) : '';
+      }
+
       function updateReview(){
+        updateAgeDisplay();
         const cpf=fmtCPF($('#cpf').value),
               nome=esc($('#nome').value),
-              nasc=esc((($('#nascimento').value)||'').split('-').reverse().join('/'));
+              nasc=esc((($('#nascimento').value)||'').split('-').reverse().join('/')),
+              idade=esc($('#idade').value || '');
         const cep=fmtCEP($('#cep').value), logr=esc($('#logradouro').value), num=esc($('#numero').value),
               comp=esc($('#complemento').value), bairro=esc($('#bairro').value),
               cidade=esc($('#cidade').value), uf=esc($('#uf').value.toUpperCase()),
@@ -798,6 +834,7 @@
               <tr><td width="200"><strong>CPF</strong></td><td>${cpf}</td></tr>
               <tr><td><strong>Nome</strong></td><td>${nome}</td></tr>
               <tr><td><strong>Nascimento</strong></td><td>${nasc}</td></tr>
+              <tr><td><strong>Idade</strong></td><td>${idade || '—'}</td></tr>
             </tbody>
           </table>
 
@@ -917,9 +954,11 @@
       $('#btnSubmitAll').addEventListener('click', submitAll);
 
       // Inputs básicos + review -------------------------------------------
-      $('#cpf').addEventListener('input', e=>{ e.target.value=onlyDigits(e.target.value).slice(0,11); updateReview(); });
+      $('#cpf').addEventListener('input', e=>{ e.target.value=onlyDigits(e.target.value).slice(0,11); setCPFValidity(); updateReview(); });
+      $('#cpf').addEventListener('blur', setCPFValidity);
       $('#cep').addEventListener('input', e=>{ e.target.value=onlyDigits(e.target.value).slice(0,8); updateReview(); });
-      ['#nome','#nascimento','#logradouro','#numero','#complemento','#bairro','#cidade','#uf', '#email', '#whatsapp']
+      $('#nascimento').addEventListener('input', ()=>{ updateAgeDisplay(); updateReview(); });
+      ['#nome','#logradouro','#numero','#complemento','#bairro','#cidade','#uf', '#email', '#whatsapp']
         .forEach(sel=>$(sel).addEventListener('input', updateReview));
 
       function selfTests(){

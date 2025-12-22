@@ -783,13 +783,10 @@
       // Comprovante --------------------------------------------------------
       async function sendComp(){
         if(!requireBaseFields()) return;
-        const fileDocumento=$('#fileDocumento').files[0];
         const fileComp=$('#fileComprovante').files[0];
         compTried = true;
-        if(!fileDocumento){ alert('É necessário anexar o documento primeiro.'); console.warn('Comp: documento não anexado'); return; }
         if(!fileComp){ alert('Selecione o comprovante de residência.'); console.warn('Comp: nenhum arquivo selecionado'); return; }
         const fd=buildBaseFormData();
-        fd.append('cnh', fileDocumento, fileDocumento.name);
         fd.append('comprovante_residencia', fileComp, fileComp.name);
 
         setStatus($('#statusComp'),'secondary','Validando comprovante...', true);

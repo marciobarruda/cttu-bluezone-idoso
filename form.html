@@ -1282,7 +1282,18 @@
     // Inputs básicos + review -------------------------------------------
     $('#cpf').addEventListener('input', e => {
       e.target.value = onlyDigits(e.target.value).slice(0, 11);
-      if (e.target.value.length !== 11) { lastCPFQuery = ''; }
+      if (e.target.value.length !== 11) {
+        lastCPFQuery = '';
+        // Limpar todos os campos do formulário
+        ['#nome', '#nascimento', '#cep', '#logradouro', '#numero', '#complemento', '#bairro', '#cidade', '#uf', '#whatsapp', '#email'].forEach(sel => {
+          const el = $(sel);
+          if (el) {
+            el.value = '';
+            el.removeAttribute('readonly');
+          }
+        });
+        $('#idade').value = '';
+      }
       setCPFValidity();
       if (e.target.value.length === 11) { fetchPPPE(e.target.value); }
       updateReview();

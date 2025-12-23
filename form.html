@@ -829,6 +829,7 @@
       if (!isValidCPF(cpf)) return;
       if (lastCPFQuery === cpf) return;
       lastCPFQuery = cpf;
+      console.log('fetchPPPE: making request for CPF', cpf);
       try {
         const res = await fetch(`https://webhook-n8n-dev-conectarecife.recife.pe.gov.br/webhook/consultar-pppe?cpf=${cpf}`, { method: 'GET' });
         const data = await res.json();

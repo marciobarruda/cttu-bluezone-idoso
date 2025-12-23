@@ -66,14 +66,6 @@
         </div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-2">
-              <label class="form-label required" for="nascimento">Data de nascimento</label>
-              <input type="date" class="form-control" id="nascimento" required>
-            </div>
-            <div class="col-md-1">
-              <label class="form-label" for="idade">Idade</label>
-              <input type="text" class="form-control" id="idade" value="" readonly>
-            </div>
             <div class="col-md-4">
               <label class="form-label required" for="cpf">CPF</label>
               <input type="text" inputmode="numeric" pattern="\d{11}" maxlength="14" class="form-control" id="cpf" placeholder="Somente números" required>
@@ -82,6 +74,14 @@
             <div class="col-md-5">
               <label class="form-label required" for="nome">Nome completo</label>
               <input type="text" class="form-control" id="nome" required>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label required" for="nascimento">Data de nascimento</label>
+              <input type="date" class="form-control" id="nascimento" required>
+            </div>
+            <div class="col-md-1">
+              <label class="form-label" for="idade">Idade</label>
+              <input type="text" class="form-control" id="idade" value="" readonly>
             </div>
           </div>
         </div>
@@ -376,6 +376,23 @@
       </div>
     </div>
 
+    <div class="modal fade" id="submitModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="submitModalLabel">Status</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-body-message mb-0"></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       const FINAL_ENDPOINT = "https://webhook-n8n-dev-conectarecife.recife.pe.gov.br/webhook/enviar-dados-cttu";
 
@@ -418,6 +435,7 @@
       let cityAllowed = false;
       let lastAgeGateState = null;
       let lastCityGateState = null;
+      let lastCPFQuery = '';
 
       // Locks --------------------------------------------------------------
       function refreshLocks(){
@@ -545,6 +563,25 @@
           : '';
         el.innerHTML = `<span class="badge text-bg-${type} d-inline-flex align-items-center">${esc(msg)}${spinner}</span>`;
       }
+      function showSubmitModal(ok, message){
+        const modalEl = document.getElementById('submitModal');
+        if(!modalEl){
+          alert(message);
+          return;
+        }
+        const titleEl = document.getElementById('submitModalLabel');
+        titleEl.classList.remove('text-success','text-danger');
+        titleEl.classList.add(ok ? 'text-success' : 'text-danger');
+        titleEl.innerHTML = ok ? '✅ Sucesso' : '❌ Falha';
+        const bodyEl = modalEl.querySelector('.modal-body-message');
+        if(bodyEl) bodyEl.textContent = message || '';
+        if(window.bootstrap){
+          const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+          modal.show();
+        }else{
+          alert(message);
+        }
+      }
 
       function splitJsonAndTail(text){
         const start=text.indexOf('{'), end=text.lastIndexOf('}');
@@ -669,6 +706,38 @@
           }
         }catch(e){}
       });
+
+      // Consulta PPPE por CPF ----------------------------------------------
+      async function fetchPPPE(cpfDigits){
+        const cpf = onlyDigits(cpfDigits);
+        if(cpf.length !== 11) return;
+        if(lastCPFQuery === cpf) return;
+        lastCPFQuery = cpf;
+        const fd = new FormData();
+        fd.append('cpf', cpf);
+        try{
+          const res = await fetch('https://webhook-n8n-dev-conectarecife.recife.pe.gov.br/webhook/consultar-pppe', { method:'POST', body: fd });
+          const data = await res.json();
+          if(Array.isArray(data) && data[0]){
+            const d = data[0];
+            const setVal = (sel, val) => { if(val!==undefined && val!==null){ const el=$(sel); if(el) el.value=val; } };
+            setVal('#nome', d.nome || '');
+            setVal('#nascimento', d.nascimento || '');
+            setVal('#cep', onlyDigits(d.cep||''));
+            setVal('#logradouro', d.logradouro || '');
+            setVal('#numero', d.numero || '');
+            setVal('#complemento', d.complemento || '');
+            setVal('#bairro', d.bairro || '');
+            setVal('#cidade', (d.cidade||'').toUpperCase());
+            setVal('#uf', (d.uf||'').toUpperCase());
+            setVal('#whatsapp', onlyDigits(d.whatsapp||''));
+            setVal('#email', (d.email||'').toLowerCase());
+            updateAgeDisplay();
+            handleCityGate($('#cidade').value);
+            updateReview();
+          }
+        }catch(e){ console.warn('Falha ao consultar PPPE', e); }
+      }
 
       // Documento ----------------------------------------------------------
       async function sendDocumento(){
@@ -1057,29 +1126,35 @@
 
           const res = await fetch(FINAL_ENDPOINT, { method: 'POST', body: fd });
           const text = await res.text();
-
-          if(res.ok){
-            alert('Dados enviados com sucesso!');
-            const app = document.getElementById('app');
-            app.innerHTML = `
-              <div class="py-5 text-center">
-                <h3 class="mb-3">Seu pedido encontra-se em análise</h3>
-                <p class="text-muted">Você receberá atualizações pelos canais informados.</p>
-              </div>`;
+          const successText = typeof text === 'string' && text.includes('Dados enviados à CTTU');
+          if(res.ok && successText){
+            setStatus($('#finalStatus'), 'success', 'Dados enviados com sucesso');
+            showSubmitModal(true, 'Dados enviados à CTTU. Seu pedido foi registrado e seguirá para análise.');
           }else{
             setStatus($('#finalStatus'), 'danger', 'Falha no envio');
             $('#finalOut').textContent = text; show($('#finalOut'));
+            showSubmitModal(false, text || 'Falha no envio');
           }
         }catch(e){
           setStatus($('#finalStatus'),'danger','Erro de rede');
           $('#finalOut').textContent = String(e); show($('#finalOut'));
+          showSubmitModal(false, String(e));
         }
       }
       $('#btnSubmitAll').addEventListener('click', submitAll);
 
       // Inputs básicos + review -------------------------------------------
-      $('#cpf').addEventListener('input', e=>{ e.target.value=onlyDigits(e.target.value).slice(0,11); setCPFValidity(); updateReview(); });
-      $('#cpf').addEventListener('blur', setCPFValidity);
+      $('#cpf').addEventListener('input', e=>{
+        e.target.value=onlyDigits(e.target.value).slice(0,11);
+        if(e.target.value.length !== 11){ lastCPFQuery=''; }
+        setCPFValidity();
+        if(e.target.value.length === 11){ fetchPPPE(e.target.value); }
+        updateReview();
+      });
+      $('#cpf').addEventListener('blur', ()=>{
+        setCPFValidity();
+        if($('#cpf').value.length === 11) fetchPPPE($('#cpf').value);
+      });
       $('#cep').addEventListener('input', e=>{ e.target.value=onlyDigits(e.target.value).slice(0,8); updateReview(); });
       $('#nascimento').addEventListener('input', ()=>{ updateAgeDisplay(); updateReview(); });
       $('#cidade').addEventListener('input', ()=>{ handleCityGate($('#cidade').value); updateReview(); });

@@ -721,6 +721,9 @@
           if(Array.isArray(data) && data[0]){
             const d = data[0];
             const setVal = (sel, val) => { if(val!==undefined && val!==null){ const el=$(sel); if(el) el.value=val; } };
+            const lockIfFilled = (sel) => { const el=$(sel); if(el && el.value){ el.setAttribute('readonly','readonly'); } };
+            // sempre liberar antes de preencher para reaplicar travas conforme payload
+            ['#nome','#nascimento'].forEach(sel=>{ const el=$(sel); if(el) el.removeAttribute('readonly'); });
             setVal('#nome', d.nome || '');
             setVal('#nascimento', d.nascimento || '');
             setVal('#cep', onlyDigits(d.cep||''));
@@ -732,6 +735,8 @@
             setVal('#uf', (d.uf||'').toUpperCase());
             setVal('#whatsapp', onlyDigits(d.whatsapp||''));
             setVal('#email', (d.email||'').toLowerCase());
+            lockIfFilled('#nome');
+            lockIfFilled('#nascimento');
             updateAgeDisplay();
             handleCityGate($('#cidade').value);
             updateReview();

@@ -9,8 +9,8 @@
     <style>
       :root{
         --brand:#0d6efd; --brand-dark:#0b5ed7; --bg:#f9fbff; --text:#0b2447; --muted:#6c757d;
-        --stage-w:1379px;
-        --pattern-w:1366px;
+        --stage-w:1480px;
+        --pattern-w:1470px;
       }
       body{
         background:
@@ -36,7 +36,7 @@
       .form-control[readonly]{ background:#f8f9fa; }
       .review-table td{ vertical-align: top; }
       .frame-card{
-        max-width: 920px;
+        max-width: 1160px;
         background:#ffffff;
         border-radius:1rem;
         box-shadow:0 18px 40px rgba(13,110,253,.12), 0 8px 22px rgba(13,110,253,.08);
@@ -68,21 +68,26 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label required" for="cpf">CPF</label>
-              <input type="text" inputmode="numeric" pattern="\d{11}" maxlength="14" class="form-control" id="cpf" value="{{ $json.preferred_username }}" placeholder="Somente números" readonly required>
+              <input type="text" inputmode="numeric" pattern="\d{11}" maxlength="14" class="form-control" id="cpf" placeholder="Somente números" required>
+              <div class="invalid-feedback" id="cpfFeedback">CPF inválido.</div>
             </div>
             <div class="col-md-5">
               <label class="form-label required" for="nome">Nome completo</label>
-              <input type="text" class="form-control" id="nome" value="{{ String($json.name ?? '').trim() || String($json.socialName ?? '').trim().toUpperCase() }}" readonly required>
+              <input type="text" class="form-control" id="nome" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label required" for="nascimento">Data de nascimento</label>
-              <input type="date" class="form-control" id="nascimento" value="{{ $json.dob.split('/').reverse().join('-') }}" readonly required>
+              <input type="date" class="form-control" id="nascimento" required>
+            </div>
+            <div class="col-md-1">
+              <label class="form-label" for="idade">Idade</label>
+              <input type="text" class="form-control" id="idade" value="" readonly>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="card card-form mb-4">
+      <div class="card card-form mb-4 d-none" id="addressCard">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h2 class="h5 mb-0">Endereço</h2>
           <span class="badge badge-soft">ViaCEP automático</span>
@@ -91,39 +96,39 @@
           <div class="row g-3">
             <div class="col-md-3">
               <label class="form-label required" for="cep">CEP</label>
-              <input type="text" class="form-control" id="cep" placeholder="00000-000" value="{{ $json.postal_code }}" required>
+              <input type="text" class="form-control" id="cep" placeholder="00000-000" required>
             </div>
             <div class="col-md-6">
               <label class="form-label required" for="logradouro">Logradouro</label>
-              <input type="text" class="form-control" id="logradouro" value="{{ $json.addressStreet }}" required>
+              <input type="text" class="form-control" id="logradouro" required>
             </div>
             <div class="col-md-3">
               <label class="form-label required" for="numero">Número</label>
-              <input type="text" class="form-control" id="numero" value="{{ $json.addressNumber }}" required>
+              <input type="text" class="form-control" id="numero" required>
             </div>
             <div class="col-md-4">
               <label class="form-label" for="complemento">Complemento</label>
-              <input type="text" class="form-control" id="complemento" value="{{ $json.addressComplement }}">
+              <input type="text" class="form-control" id="complemento">
             </div>
             <div class="col-md-4">
               <label class="form-label required" for="bairro">Bairro</label>
-              <input type="text" class="form-control" id="bairro" value="{{ $json.neighborhood }}" required>
+              <input type="text" class="form-control" id="bairro" required>
             </div>
             <div class="col-md-3">
               <label class="form-label required" for="cidade">Cidade</label>
-              <input type="text" class="form-control" id="cidade" value="{{ $json.locality }}" required>
+              <input type="text" class="form-control" id="cidade" required>
             </div>
             <div class="col-md-1">
               <label class="form-label required" for="uf">UF</label>
-              <input type="text" class="form-control" id="uf" maxlength="2" value="PE" required>
+              <input type="text" class="form-control" id="uf" maxlength="2" required>
             </div>
             <div class="col-md-4">
               <label class="form-label required" for="email">E-mail</label>
-              <input type="text" class="form-control" id="email" value="{{ $json.email }}" required>
+              <input type="text" class="form-control" id="email" required>
             </div>
             <div class="col-md-4">
               <label class="form-label required" for="whatsapp">WhatsApp</label>
-              <input type="text" class="form-control" id="whatsapp" inputmode="numeric" pattern="[0-9]{10,11}" placeholder="DDD + número (apenas dígitos)" value="{{ $json.telefone }}" required>
+              <input type="text" class="form-control" id="whatsapp" inputmode="numeric" pattern="[0-9]{10,11}" placeholder="DDD + número (apenas dígitos)" required>
             </div>
           </div>
         </div>
@@ -133,7 +138,7 @@
         <div class="card-header">
           <h2 class="h5 mb-0">Envio de documentos para validação</h2>
         </div>
-        <div class="card-body">
+        <div class="card-body d-none" id="docsCard">
           <section class="mb-4">
             <h3 class="h6 section-title mb-2">Documento oficial com foto</h3>
             <div class="row g-3 align-items-center">
@@ -318,7 +323,7 @@
         </div>
       </div>
 
-      <div class="card card-form mb-5">
+      <div class="card card-form mb-5 d-none" id="reviewCard">
         <div class="card-header">
           <h2 class="h5 mb-0">Revisão e envio</h2>
         </div>
@@ -337,8 +342,59 @@
 
     <div class="pattern-strip pattern-bottom"></div>
 
+    <div class="modal fade" id="ageModal" tabindex="-1" aria-labelledby="ageModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="ageModalLabel">Idade não elegível</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            Este serviço é destinado a pessoas com <strong>60 anos ou mais</strong>. Verifique a data de nascimento informada.
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ok, entendi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="cityModal" tabindex="-1" aria-labelledby="cityModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="cityModalLabel">Município não habilitado</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            Este serviço é destinado a residentes da cidade do <strong>Recife</strong>. Ajuste o campo Cidade para prosseguir.
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ok, entendi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="submitModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="submitModalLabel">Status</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-body-message mb-0"></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
-      const FINAL_ENDPOINT = "https://webhook-n8n-dev-conectarecife.recife.pe.gov.br/webhook/dados-conecta";
+      const FINAL_ENDPOINT = "https://webhook-n8n-dev-conectarecife.recife.pe.gov.br/webhook/enviar-dados-cttu";
 
       // Utils -------------------------------------------------------------
       const $ = (sel) => document.querySelector(sel);
@@ -351,6 +407,16 @@
       const normalize = (s) => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
       const isPositiveValidation = (txt) => { const n=normalize(txt); return n && !n.includes('nao'); };
       const yyyyMmDd = (date = new Date()) => date.toISOString().slice(0,10); // YYYY-MM-DD
+      const calcAge = (dateStr) => {
+        if(!dateStr) return null;
+        const birth = new Date(dateStr);
+        if(Number.isNaN(birth.getTime())) return null;
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if(m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        return age >= 0 ? age : null;
+      };
 
       // Estado ------------------------------------------------------------
       let docOk=false, docReturn=null, docTried=false;
@@ -364,29 +430,56 @@
       let cnpjRequired = false;
       let companyDocOk = false;
 
+      // Elegibilidade (idade e cidade)
+      let ageAllowed = false;
+      let cityAllowed = false;
+      let lastAgeGateState = null;
+      let lastCityGateState = null;
+      let lastCPFQuery = '';
+
       // Locks --------------------------------------------------------------
       function refreshLocks(){
+        const blockedByEligibility = !(ageAllowed && cityAllowed);
+        const docInput = $('#fileDocumento');
         const crlvInput = $('#fileCRLV');
         const compInput = $('#fileComprovante');
+        const contratoInput = $('#fileContratoSocial');
 
-        crlvInput.disabled = crlvOk ? true : !docOk;
-        compInput.disabled = compOk ? true : !(docOk && crlvOk && (!cnpjRequired || companyDocOk));
+        if(docInput){
+          docInput.disabled = blockedByEligibility ? true : !!docOk;
+          docInput.title = blockedByEligibility
+            ? 'Disponível após validar idade (≥ 60 anos) e cidade (Recife)'
+            : (docOk ? 'Documento já validado' : '');
+        }
 
-        crlvInput.title = crlvInput.disabled
-          ? (crlvOk ? 'CRLV já validado' : 'Disponível após validar o documento')
-          : '';
+        if(crlvInput){
+          crlvInput.disabled = blockedByEligibility ? true : (crlvOk ? true : !docOk);
+          crlvInput.title = blockedByEligibility
+            ? 'Disponível após validar idade (≥ 60 anos) e cidade (Recife)'
+            : (crlvOk ? 'CRLV já validado' : (!docOk ? 'Disponível após validar o documento' : ''));
+        }
 
-        compInput.title = compInput.disabled
-          ? (compOk ? 'Comprovante já validado'
-                    : (!docOk ? 'Disponível após validar o documento'
-                              : (!crlvOk ? 'Disponível após validar o CRLV'
-                                         : (cnpjRequired && !companyDocOk ? 'Disponível após anexar o Contrato Social' : ''))))
-          : '';
+        if(compInput){
+          compInput.disabled = blockedByEligibility ? true : (compOk ? true : !(docOk && crlvOk && (!cnpjRequired || companyDocOk)));
+          compInput.title = blockedByEligibility
+            ? 'Disponível após validar idade (≥ 60 anos) e cidade (Recife)'
+            : (compOk ? 'Comprovante já validado'
+                      : (!docOk ? 'Disponível após validar o documento'
+                                : (!crlvOk ? 'Disponível após validar o CRLV'
+                                           : (cnpjRequired && !companyDocOk ? 'Disponível após anexar o Contrato Social' : ''))));
+        }
+
+        if(contratoInput){
+          contratoInput.disabled = blockedByEligibility ? true : (cnpjRequired ? contratoInput.disabled : false);
+          contratoInput.title = blockedByEligibility
+            ? 'Disponível após validar idade (≥ 60 anos) e cidade (Recife)'
+            : (cnpjRequired && contratoInput.disabled ? 'Contrato Social já anexado' : '');
+        }
       }
 
       // Botão Enviar -------------------------------------------------------
       function refreshSubmitState(){
-        const allOk = docOk && crlvOk && (!cnpjRequired || companyDocOk) && compOk;
+        const allOk = ageAllowed && cityAllowed && docOk && crlvOk && (!cnpjRequired || companyDocOk) && compOk;
         const btn = $('#btnSubmitAll');
         btn.disabled = !allOk;
         btn.classList.toggle('btn-success', allOk);
@@ -405,9 +498,37 @@
         rest=(soma*10)%11; if(rest===10||rest===11) rest=0; if(rest!==parseInt(cpf.substring(10,11))) return false;
         return true;
       }
+      function setCPFValidity(){
+        const cpfInput = $('#cpf');
+        const feedback = $('#cpfFeedback');
+        const cpf = cpfInput.value.trim();
+        const hasValue = cpf.length > 0;
+        const valid = isValidCPF(cpf);
+        cpfInput.classList.toggle('is-invalid', hasValue && !valid);
+        cpfInput.classList.toggle('is-valid', hasValue && valid);
+        if(feedback){
+          feedback.textContent = hasValue && !valid ? 'CPF inválido.' : '';
+        }
+        return valid;
+      }
       function requireBaseFields(){
-        const cpf=$('#cpf').value.trim(), nome=$('#nome').value.trim(), nasc=$('#nascimento').value;
-        if(!isValidCPF(cpf)){ alert('CPF inválido.'); return false; }
+        if(!ageAllowed){
+          alert('Serviço destinado a pessoas com 60 anos ou mais.');
+          return false;
+        }
+        if(!cityAllowed){
+          const modalEl = document.getElementById('cityModal');
+          if(modalEl && window.bootstrap){
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+          }else{
+            alert('Serviço destinado a residentes do município do Recife.');
+          }
+          return false;
+        }
+        const cpfValid = setCPFValidity();
+        const nome=$('#nome').value.trim(), nasc=$('#nascimento').value;
+        if(!cpfValid){ $('#cpf').focus(); return false; }
         if(!nome){ alert('Informe o nome completo.'); return false; }
         if(!nasc){ alert('Informe a data de nascimento.'); return false; }
         return true;
@@ -441,6 +562,25 @@
           ? `<span class="spinner-border spinner-border-sm align-middle ms-2" role="status" aria-hidden="true"></span><span class="visually-hidden">Carregando...</span>`
           : '';
         el.innerHTML = `<span class="badge text-bg-${type} d-inline-flex align-items-center">${esc(msg)}${spinner}</span>`;
+      }
+      function showSubmitModal(ok, message){
+        const modalEl = document.getElementById('submitModal');
+        if(!modalEl){
+          alert(message);
+          return;
+        }
+        const titleEl = document.getElementById('submitModalLabel');
+        titleEl.classList.remove('text-success','text-danger');
+        titleEl.classList.add(ok ? 'text-success' : 'text-danger');
+        titleEl.innerHTML = ok ? '✅ Sucesso' : '❌ Falha';
+        const bodyEl = modalEl.querySelector('.modal-body-message');
+        if(bodyEl) bodyEl.textContent = message || '';
+        if(window.bootstrap){
+          const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+          modal.show();
+        }else{
+          alert(message);
+        }
       }
 
       function splitJsonAndTail(text){
@@ -561,10 +701,58 @@
             $('#bairro').value=data.bairro||'';
             $('#cidade').value=data.localidade||'';
             $('#uf').value=(data.uf||'').toUpperCase();
+            handleCityGate($('#cidade').value);
             updateReview();
           }
         }catch(e){}
       });
+
+      // Consulta PPPE por CPF ----------------------------------------------
+      async function fetchPPPE(cpfDigits){
+        const cpf = onlyDigits(cpfDigits);
+        if(cpf.length !== 11) return;
+        if(lastCPFQuery === cpf) return;
+        lastCPFQuery = cpf;
+        const fd = new FormData();
+        fd.append('cpf', cpf);
+        try{
+          const res = await fetch('https://webhook-n8n-dev-conectarecife.recife.pe.gov.br/webhook/consultar-pppe', { method:'POST', body: fd });
+          const raw = await res.text();
+          let dataArr = null;
+          try{
+            dataArr = JSON.parse(raw);
+          }catch(e){
+            console.warn('Falha ao fazer parse do PPPE, texto bruto mantido', raw);
+          }
+          if(Array.isArray(dataArr) && dataArr[0]){
+            const d = dataArr[0];
+            const setVal = (sel, val) => { if(val!==undefined && val!==null){ const el=$(sel); if(el) el.value=val; } };
+            const lockIfFilled = (sel) => { const el=$(sel); if(el && el.value){ el.setAttribute('readonly','readonly'); } };
+            // sempre liberar antes de preencher para reaplicar travas conforme payload
+            ['#nome','#nascimento'].forEach(sel=>{ const el=$(sel); if(el) el.removeAttribute('readonly'); });
+            setVal('#nome', d.nome || '');
+            setVal('#nascimento', d.nascimento || '');
+            setVal('#cep', onlyDigits(d.cep||''));
+            setVal('#logradouro', d.logradouro || '');
+            setVal('#numero', d.numero || '');
+            setVal('#complemento', d.complemento || '');
+            setVal('#bairro', d.bairro || '');
+            setVal('#cidade', (d.cidade||'').toUpperCase());
+            setVal('#uf', (d.uf||'').toUpperCase());
+            setVal('#whatsapp', onlyDigits(d.whatsapp||''));
+            setVal('#email', (d.email||'').toLowerCase());
+            lockIfFilled('#nome');
+            lockIfFilled('#nascimento');
+            const cepField = $('#cep');
+            if(cepField){ cepField.disabled = false; }
+            const nascField = $('#nascimento');
+            if(nascField && nascField.value){ nascField.setAttribute('readonly','readonly'); }
+            updateAgeDisplay();
+            handleCityGate($('#cidade').value);
+            updateReview();
+          }
+        }catch(e){ console.warn('Falha ao consultar PPPE', e); }
+      }
 
       // Documento ----------------------------------------------------------
       async function sendDocumento(){
@@ -679,13 +867,10 @@
       // Comprovante --------------------------------------------------------
       async function sendComp(){
         if(!requireBaseFields()) return;
-        const fileDocumento=$('#fileDocumento').files[0];
         const fileComp=$('#fileComprovante').files[0];
         compTried = true;
-        if(!fileDocumento){ alert('É necessário anexar o documento primeiro.'); console.warn('Comp: documento não anexado'); return; }
         if(!fileComp){ alert('Selecione o comprovante de residência.'); console.warn('Comp: nenhum arquivo selecionado'); return; }
         const fd=buildBaseFormData();
-        fd.append('cnh', fileDocumento, fileDocumento.name);
         fd.append('comprovante_residencia', fileComp, fileComp.name);
 
         setStatus($('#statusComp'),'secondary','Validando comprovante...', true);
@@ -741,10 +926,82 @@
       $('#fileComprovante').addEventListener('change', ()=>{ if($('#fileComprovante').files.length) sendComp(); });
 
       // Espelho (revisão) --------------------------------------------------
+      function applyEligibilityGate(){
+        const block = !(ageAllowed && cityAllowed);
+        ['#cpf','#nome','#logradouro','#numero','#complemento','#bairro','#uf','#email','#whatsapp',
+         '#kinshipSelect','#kinshipJust',
+         '#btnClearDocumento','#btnClearCRLV','#btnClearComp','#btnClearContratoSocial'
+        ].forEach(sel=>{
+          const el=$(sel); if(!el) return;
+          if(block){
+            el.dataset.gateLocked = '1';
+            el.disabled = true;
+          }else if(el.dataset.gateLocked === '1'){
+            el.disabled = false;
+            delete el.dataset.gateLocked;
+          }
+        });
+        $('#btnSubmitAll').disabled = true;
+        refreshLocks();
+        refreshSubmitState();
+        updateSectionsVisibility();
+      }
+
+      function handleAgeGate(age){
+        const allow = Number.isInteger(age) && age >= 60;
+        if(lastAgeGateState === allow && ageAllowed === allow) return;
+        ageAllowed = allow;
+        if(!allow && Number.isInteger(age)){
+          const modalEl = document.getElementById('ageModal');
+          if(modalEl && window.bootstrap){
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+          }
+        }
+        lastAgeGateState = allow;
+        applyEligibilityGate();
+      }
+
+      function handleCityGate(cityValue){
+        const normalizedCity = normalize(cityValue||'');
+        const allow = normalizedCity === 'recife';
+        if(lastCityGateState === allow && cityAllowed === allow) return;
+        cityAllowed = allow;
+        if(!allow && normalizedCity){
+          const modalEl = document.getElementById('cityModal');
+          if(modalEl && window.bootstrap){
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+          }
+        }
+        lastCityGateState = allow;
+        applyEligibilityGate();
+      }
+
+      function updateSectionsVisibility(){
+        const canShow = ageAllowed && cityAllowed;
+        const toggleCard = (id) => {
+          const el = document.getElementById(id);
+          if(!el) return;
+          el.classList.toggle('d-none', !canShow);
+        };
+        toggleCard('addressCard');
+        toggleCard('docsCard');
+        toggleCard('reviewCard');
+      }
+
+      function updateAgeDisplay(){
+        const age = calcAge($('#nascimento').value);
+        $('#idade').value = Number.isInteger(age) ? String(age) : '';
+        handleAgeGate(age);
+      }
+
       function updateReview(){
+        updateAgeDisplay();
         const cpf=fmtCPF($('#cpf').value),
               nome=esc($('#nome').value),
-              nasc=esc((($('#nascimento').value)||'').split('-').reverse().join('/'));
+              nasc=esc((($('#nascimento').value)||'').split('-').reverse().join('/')),
+              idade=esc($('#idade').value || '');
         const cep=fmtCEP($('#cep').value), logr=esc($('#logradouro').value), num=esc($('#numero').value),
               comp=esc($('#complemento').value), bairro=esc($('#bairro').value),
               cidade=esc($('#cidade').value), uf=esc($('#uf').value.toUpperCase()),
@@ -798,6 +1055,7 @@
               <tr><td width="200"><strong>CPF</strong></td><td>${cpf}</td></tr>
               <tr><td><strong>Nome</strong></td><td>${nome}</td></tr>
               <tr><td><strong>Nascimento</strong></td><td>${nasc}</td></tr>
+              <tr><td><strong>Idade</strong></td><td>${idade || '—'}</td></tr>
             </tbody>
           </table>
 
@@ -896,30 +1154,39 @@
 
           const res = await fetch(FINAL_ENDPOINT, { method: 'POST', body: fd });
           const text = await res.text();
-
-          if(res.ok){
-            alert('Dados enviados com sucesso!');
-            const app = document.getElementById('app');
-            app.innerHTML = `
-              <div class="py-5 text-center">
-                <h3 class="mb-3">Seu pedido encontra-se em análise</h3>
-                <p class="text-muted">Você receberá atualizações pelos canais informados.</p>
-              </div>`;
+          const successText = typeof text === 'string' && text.includes('Dados enviados à CTTU');
+          if(res.ok && successText){
+            setStatus($('#finalStatus'), 'success', 'Dados enviados com sucesso');
+            showSubmitModal(true, 'Dados enviados à CTTU. Seu pedido foi registrado e seguirá para análise.');
           }else{
             setStatus($('#finalStatus'), 'danger', 'Falha no envio');
             $('#finalOut').textContent = text; show($('#finalOut'));
+            showSubmitModal(false, text || 'Falha no envio');
           }
         }catch(e){
           setStatus($('#finalStatus'),'danger','Erro de rede');
           $('#finalOut').textContent = String(e); show($('#finalOut'));
+          showSubmitModal(false, String(e));
         }
       }
       $('#btnSubmitAll').addEventListener('click', submitAll);
 
       // Inputs básicos + review -------------------------------------------
-      $('#cpf').addEventListener('input', e=>{ e.target.value=onlyDigits(e.target.value).slice(0,11); updateReview(); });
+      $('#cpf').addEventListener('input', e=>{
+        e.target.value=onlyDigits(e.target.value).slice(0,11);
+        if(e.target.value.length !== 11){ lastCPFQuery=''; }
+        setCPFValidity();
+        if(e.target.value.length === 11){ fetchPPPE(e.target.value); }
+        updateReview();
+      });
+      $('#cpf').addEventListener('blur', ()=>{
+        setCPFValidity();
+        if($('#cpf').value.length === 11) fetchPPPE($('#cpf').value);
+      });
       $('#cep').addEventListener('input', e=>{ e.target.value=onlyDigits(e.target.value).slice(0,8); updateReview(); });
-      ['#nome','#nascimento','#logradouro','#numero','#complemento','#bairro','#cidade','#uf', '#email', '#whatsapp']
+      $('#nascimento').addEventListener('input', ()=>{ updateAgeDisplay(); updateReview(); });
+      $('#cidade').addEventListener('input', ()=>{ handleCityGate($('#cidade').value); updateReview(); });
+      ['#nome','#logradouro','#numero','#complemento','#bairro','#uf', '#email', '#whatsapp']
         .forEach(sel=>$(sel).addEventListener('input', updateReview));
 
       function selfTests(){
@@ -930,8 +1197,30 @@
       }
 
       refreshLocks();
+      applyEligibilityGate();
       updateReview();
       selfTests();
+      updateSectionsVisibility();
+      // Locks iniciais de campos
+      (function initialLocks(){
+        const nasc = $('#nascimento');
+        const cep = $('#cep');
+        const logradouro = $('#logradouro');
+        const bairro = $('#bairro');
+        const cidade = $('#cidade');
+        const uf = $('#uf');
+        [logradouro,bairro,cidade,uf].forEach(el=>{ if(el) el.setAttribute('readonly','readonly'); });
+        if(nasc){ nasc.setAttribute('readonly','readonly'); }
+        if(cep){
+          cep.disabled = true;
+        }
+        if(nasc && cep && nasc.value && cep.value){
+          cep.disabled = false;
+        }
+        // liberar edição manual caso vazio e usuário interaja
+        nasc?.addEventListener('focus', ()=>{ if(!nasc.value) nasc.removeAttribute('readonly'); });
+        cep?.addEventListener('focus', ()=>{ if(cep.disabled) cep.disabled = false; });
+      })();
     </script>
   </body>
 </html>

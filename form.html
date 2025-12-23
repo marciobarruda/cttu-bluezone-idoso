@@ -858,6 +858,18 @@
           updateAgeDisplay();
           handleCityGate($('#cidade').value);
           updateReview();
+        } else if (Array.isArray(data) && data[0] && (data[0].status || data[0].mensagem)) {
+          // Erro ou pessoa não encontrada - liberar campos para edição manual
+          console.log('fetchPPPE: pessoa não encontrada, liberando campos para edição');
+          ['#nome', '#nascimento', '#cep', '#logradouro', '#numero', '#complemento', '#bairro', '#cidade', '#uf', '#whatsapp', '#email'].forEach(sel => {
+            const el = $(sel);
+            if (el) el.removeAttribute('readonly');
+          });
+          // Habilitar elegibilidade para exibir seções
+          ageAllowed = true;
+          cityAllowed = true;
+          applyEligibilityGate();
+          updateSectionsVisibility();
         }
       } catch (e) { console.warn('Falha ao consultar PPPE', e); }
     }
